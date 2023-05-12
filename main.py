@@ -38,9 +38,26 @@ def replace_missing_values(df):
 
 def fix_data_types(df):
     df[["bore", "stroke"]] = df[["bore", "stroke"]].astype("float")
-    df[["normalized-losses"]] = df[["normalized-losses"]].astype("int")
+    df[["normalized-losses","horsepower"]] = df[["normalized-losses","horsepower"]].astype("int")
     df[["price"]] = df[["price"]].astype("float")
     df[["peak-rpm"]] = df[["peak-rpm"]].astype("float")
+    return df
+
+def normalize(df):
+    df['length'] = df['length'] / df['length'].max()
+    df['width'] = df['width'] / df['width'].max()
+    df['height'] = df['height'] / df['height'].max()
+    print(df[['length','width','height']].head())
+    return df
+
+def bin(df):
+    bins = np.linspace(min(df["horsepower"]), max(df["horsepower"]), 4)
+    group_names = ['Low', 'Medium', 'High']
+    df['horsepower-binned'] = pd.cut(df['horsepower'], bins, labels=group_names, include_lowest=True)
+    horsepower_index = df.columns.get_loc('horsepower')
+    new_columns = df.columns.tolist()
+    new_columns = new_columns[:horsepower_index + 1] + ['horsepower-binned'] + new_columns[horsepower_index + 1:-1]
+    df = df[new_columns]
     return df
 
 def main():
@@ -60,6 +77,7 @@ def main():
     df = replace_missing_values(df)
     df = fix_data_types(df)
     check_missing_values(df)
-    print(df.dtypes)
+    df = normalize(df)
+    df = bin(df)
     df.to_csv("Cleaned.csv",index=False)
 main()
