@@ -1,35 +1,40 @@
 import pandas as pd
 import numpy as np
 
-def identify_missing_values(df):
-    df_replaced = df.replace("?", np.NaN)
+def check_missing_values(df):
     missing_data = df.isnull()
     for column in missing_data.columns.values.tolist():
         print(column)
         print (missing_data[column].value_counts())
         print("")
+def clean_data(df):
+    df = df.applymap(lambda x: x.strip() if isinstance(x, str) else x)
+    df = df.replace("?", np.NaN)
     return df
 
 def replace_missing_values(df):
-    df.dropna(subset=["price"], axis=0)
-    df.reset_index(drop=True)
-    df.to_csv("bgrb.csv")
+
+
     avg_norm_loss = df["normalized-losses"].astype("float").mean(axis=0)
-    print("Average of normalized-losses:", avg_norm_loss)
-    df["normalized-losses"].replace(np.NaN, avg_norm_loss, inplace=True)
     avg_bore = df['bore'].astype('float').mean(axis=0)
-    print("Average of bore:", avg_bore)
-    df["bore"].replace(np.NaN, avg_bore)
     avg_horsepower = df['horsepower'].astype('float').mean(axis=0)
-    print("Average horsepower:", avg_horsepower)
-    df['horsepower'].replace(np.NaN, avg_horsepower)
     avg_peakrpm = df['peak-rpm'].astype('float').mean(axis=0)
-    print("Average peak rpm:", avg_peakrpm)
-    df['peak-rpm'].replace(np.NaN, avg_peakrpm)
-    max_doors = df['peak-rpm'].replace(np.nan, avg_peakrpm, inplace=True)
-    df["num-of-doors"].replace(np.NaN, max_doors)
-    # drop instances where labels don't exist since this is what should be predicted.
+    max_doors = df['num-of-doors'].value_counts().idxmax()
+    avg_stroke = df["stroke"].astype("float").mean(axis=0)
+
+
+    df["normalized-losses"].replace(np.NaN, avg_norm_loss, inplace=True)
+    df['horsepower'].replace(np.NaN, avg_horsepower,inplace=True)
+    df['peak-rpm'].replace(np.NaN, avg_peakrpm,inplace=True)
+    df["num-of-doors"].replace(np.NaN, max_doors,inplace=True)
+    df["bore"].replace(np.nan, avg_bore, inplace=True)
+    df['stroke'].replace(np.nan, avg_stroke,inplace=True)
+    print(df.at[8,'price'])
+    print(df["price"].isnull().sum())
+    df.dropna(subset=["price"], axis=0, inplace=True)
+    df.reset_index(drop=True, inplace=True)
     return df
+
 
 def fix_data_types(df):
     df[["bore", "stroke"]] = df[["bore", "stroke"]].astype("float")
@@ -47,13 +52,14 @@ def main():
                "num-of-cylinders", "engine-size", "fuel-system", "bore", "stroke", "compression-ratio", "horsepower",
                "peak-rpm", "city-mpg", "highway-mpg", "price"]
     df.columns = headers
-    # create csv file with headers included.
     df.to_csv("dataset_with_columns.csv", index=False)
-    # df = df.astype(str)
-    df = identify_missing_values(df)
-    df.to_csv("dataset_with_columns.csv", index=False)
-    # df.describe(include="all").to_csv("statistics.csv")
+    df = clean_data(df)
+    check_missing_values(df)
+    df.to_csv("dataset_after_NaN.csv",index=False)
+    df.describe(include="all").to_csv("statistics.csv")
     df = replace_missing_values(df)
     df = fix_data_types(df)
+    check_missing_values(df)
+    print(df.dtypes)
+    df.to_csv("Cleaned.csv",index=False)
 main()
-# df.to_csv("fixedHeader.csv")
